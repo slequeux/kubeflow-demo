@@ -2,71 +2,77 @@
 
 ## Install Kubernetes cluster
 
-[Instruction to setup account](https://www.kubeflow.org/docs/started/getting-started-gke/)
+```bash
+minikube start
+# 2 CPU
+# 8G RAM
+# 50G disk
 
-- [Configurer l'écran d'autorisation](https://console.cloud.google.com/apis/credentials/consent?project=kubeflow-227910&folder&organizationId=552523943544)
-- Ajouter Credential
-  - ClientID : 559752670223-4des59ecd2pe72b49p99tdhgmvs6etfl.apps.googleusercontent.com
-  - Secret : NQ_Ce7P9TM8dQ8PTVSfXRQrW
-
+eval $(minikube docker-env)
+```
 
 ## Install Kubeflow
 
-Using the web ui:  https://deploy.kubeflow.cloud/#/deploy => OK
+To download and install
+```
+export KUBEFLOW_TAG=v0.4.1
 
-OU
+curl -O https://raw.githubusercontent.com/kubeflow/kubeflow/${KUBEFLOW_TAG}/scripts/setup-minikube.sh
+chmod +x setup-minikube.sh
+```
 
+To use already downloaded script
 ```bash
-export CLIENT_ID=559752670223-4des59ecd2pe72b49p99tdhgmvs6etfl.apps.googleusercontent.com
-export CLIENT_SECRET=NQ_Ce7P9TM8dQ8PTVSfXRQrW
-export PROJECT=kubeflow-227910
-export DEPLOYMENT_NAME=kubeflow-app
-export KUBEFLOW_VERSION=0.4.1
-curl https://raw.githubusercontent.com/kubeflow/kubeflow/v${KUBEFLOW_VERSION}/scripts/gke/deploy.sh | bash
-
+cd setup
+./setup-minikube.sh
 
 kubectl -n kubeflow get all
 ```
 
-https://kubeflow-app.endpoints.kubeflow-227910.cloud.goog/
+Kubeflow available at http://localhost:8080
 
+## Storage
 
-## Import Data
+Create storage for models
+```bash
+cd storage
+kubectl create -f model_storage.yaml
 
-Import des données à la main dans un bucket GCS
-
-
+kubectl -n kubeflow get pv
+kubectl -n kubeflow get pvc
+``` 
 
 ## Explore Jupyter
 
-Dans un notebook :
-- `!gsutil -m rsync -r gs://kubeflow-sleq ./work/`
-
+http://localhost:8080/hub
 
 ## Run simple tensorflow script
 
-
-
-
-
+See [simple mnist](./simple_mnist/README.md)
 
 ## Run distributed tensorflow script
 
-
-
-
-
+See [distributed mnist](./distributed-mnist/README.md)
 
 ## Deploy model
 
+```bash
+APP_NAME=???
 
+ks init $APP_NAME
+cd $APP_NAME
 
+ks env set default --namespace kubeflow
+ks registry add kubeflow github.com/kubeflow/kubeflow/tree/master/kubeflow
+ks pkg install kubeflow/tf-serving
 
+ks generate io.ksonnet.pkg.tf-serving my-serving-comp
+ks param set my-serving-comp deployHttpProxy True
+ks param set my-serving-comp modelStorageType nfs
+ks param set my-serving-comp modelPath /mnt
+ks param set my-serving-comp nfsPVC model-pv-claim
+ks param set my-serving-comp version 1549557994 --as-string
+ks param list
 
-## Upgrade model
-
-
-
-
-
-
+ks apply default -c my-serving-comp
+```
