@@ -1,0 +1,22 @@
+apiVersion: kubeflow.org/v1beta1
+kind: TFJob
+metadata:
+  name: simple-mnist
+  namespace: kubeflow
+spec:
+  tfReplicaSpecs:
+    Chief:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - image: simple-mnist:1.0.0
+              name: tensorflow
+              volumeMounts:
+                - mountPath: "/opt/model/"
+                  name: model-pv-storage
+          restartPolicy: OnFailure
+          volumes:
+            - name: model-pv-storage
+              persistentVolumeClaim:
+                claimName: model-pv-claim

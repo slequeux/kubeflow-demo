@@ -1,0 +1,13 @@
+.idea
+jupyter
+notebooks
+
+setup/deployment
+setup/ks_*
+setup/kubeflow
+setup/localapp
+setup/scripts
+setup/download.sh
+setup/ks*
+
+serving-app

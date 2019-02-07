@@ -1,0 +1,31 @@
+apiVersion: kubeflow.org/v1beta1
+kind: TFJob
+metadata:
+  name: distributed-mnist
+  namespace: kubeflow
+spec:
+  tfReplicaSpecs:
+    Chief:
+      replicas: 1
+      template:
+        spec:
+          containers:
+              - image: distributed-mnist:1.0.0
+                name: tensorflow
+          restartPolicy: OnFailure
+    Ps:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - image: distributed-mnist:1.0.0
+              name: tensorflow
+          restartPolicy: OnFailure
+    Worker:
+      replicas: 1
+      template:
+        spec:
+          containers:
+            - image: distributed-mnist:1.0.0
+              name: tensorflow
+          restartPolicy: OnFailure

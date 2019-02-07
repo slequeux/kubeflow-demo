@@ -1,0 +1,28 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: model-pv-volume
+  labels:
+    type: local
+  namespace: kubeflow
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/tmp/model"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: model-pv-claim
+  namespace: kubeflow
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
