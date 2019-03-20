@@ -4,7 +4,7 @@
 
 ```bash
 minikube start
-# 2 CPU
+# 3 CPU
 # 8G RAM
 # 50G disk
 
@@ -33,6 +33,8 @@ Kubeflow available at http://localhost:8080
 
 ## Storage
 
+### Persistent Volumes
+
 Create storage for models
 ```bash
 cd storage
@@ -41,6 +43,10 @@ kubectl create -f model_storage.yaml
 kubectl -n kubeflow get pv
 kubectl -n kubeflow get pvc
 ``` 
+
+### Minio
+
+How to upload data using `mc`
 
 ## Explore Jupyter
 
@@ -57,7 +63,7 @@ See [distributed mnist](./distributed-mnist/README.md)
 ## Deploy model
 
 ```bash
-APP_NAME=???
+APP_NAME=my-serving-comp
 
 ks init $APP_NAME
 cd $APP_NAME
@@ -75,4 +81,13 @@ ks param set my-serving-comp version 1549557994 --as-string
 ks param list
 
 ks apply default -c my-serving-comp
+```
+
+## Debug
+
+To restore cluster once stopped
+```
+minikube start
+kubectl -n kubeflow port-forward svc/ambassador 8080:80 2>&1 >/dev/null &
+kubectl port-forward svc/minio-service 9000:9000 --namespace kubeflow &
 ```
