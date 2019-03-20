@@ -42,7 +42,7 @@ def build_model():
 
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
-    tf.logging.info('Training mnist model using tensorflow version \'%s\'' % tf.__version__)
+    tf.logging.info('Training pipeline-mnist model using tensorflow version \'%s\'' % tf.__version__)
 
     model = build_model()
     strategy = tf.contrib.distribute.ParameterServerStrategy()

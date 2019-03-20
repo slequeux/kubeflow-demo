@@ -11,3 +11,5 @@ setup/download.sh
 setup/ks*
 
 serving-app
+
+*.tar.gz

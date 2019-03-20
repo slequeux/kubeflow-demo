@@ -32,7 +32,7 @@ kubectl delete tfjob distributed-mnist --namespace kubeflow
 Currently, when running this code inside my environment, I got the following error :
 ```python
 Traceback (most recent call last):
-  File "/opt/tfjob/mnist.py", line 53, in <module>
+  File pipeline-mnist, line 53, in <module>
     model_estimator.train(input_fn=lambda: input_dataset_fn(train_images, train_labels), steps=2000)
   File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/estimator/estimator.py", line 354, in train
     loss = self._train_model(input_fn, hooks, saving_listeners)

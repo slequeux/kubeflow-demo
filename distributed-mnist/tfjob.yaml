@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1beta1
 kind: TFJob
 metadata:
-  name: distributed-mnist
+  name: distributed-pipeline-mnist
   namespace: kubeflow
 spec:
   tfReplicaSpecs:
@@ -10,7 +10,7 @@ spec:
       template:
         spec:
           containers:
-              - image: distributed-mnist:1.0.0
+              - image: distributed-pipeline-mnist:1.0.0
                 name: tensorflow
           restartPolicy: OnFailure
     Ps:
@@ -18,7 +18,7 @@ spec:
       template:
         spec:
           containers:
-            - image: distributed-mnist:1.0.0
+            - image: distributed-pipeline-mnist:1.0.0
               name: tensorflow
           restartPolicy: OnFailure
     Worker:
@@ -26,6 +26,6 @@ spec:
       template:
         spec:
           containers:
-            - image: distributed-mnist:1.0.0
+            - image: distributed-pipeline-mnist:1.0.0
               name: tensorflow
           restartPolicy: OnFailure
