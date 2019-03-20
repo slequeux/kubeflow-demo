@@ -8,7 +8,7 @@ from kubernetes import client as k8s_client
 def preprocess_op():
     return dsl.ContainerOp(
         name='preprocess',
-        image='romibuzi/kubeflow-pipeline-mnist:preprocessing-fifth',
+        image='romibuzi/kubeflow-mnist:preprocessing-fifth',
         arguments=[],
         file_outputs={
             'output': '/output.txt'
@@ -19,7 +19,7 @@ def preprocess_op():
 def train_op(preprocess_output: str):
     return dsl.ContainerOp(
         name='train',
-        image='romibuzi/kubeflow-pipeline-mnist:train-seventh',
+        image='romibuzi/kubeflow-mnist:train-seventh',
         arguments=[
             '--preprocess-output', preprocess_output
         ],
@@ -27,13 +27,15 @@ def train_op(preprocess_output: str):
     )
 
 
-def prediction_op(train_output: str, preprocess_output: str):
+def prediction_op(train_output: str, preprocess_output: str, cm_bucket_name: str, cm_path: str):
     return dsl.ContainerOp(
         name='prediction',
-        image='romibuzi/kubeflow-pipeline-mnist:prediction-third',
+        image='romibuzi/kubeflow-mnist:prediction-third',
         arguments=[
             '--preprocess-output', preprocess_output,
-            '--train-output', train_output
+            '--train-output', train_output,
+            '--bucket-name', cm_bucket_name,
+            '--cm-path', cm_path
         ],
         file_outputs={'prediction': '/output.txt'}
     )
@@ -43,19 +45,27 @@ def prediction_op(train_output: str, preprocess_output: str):
     name='pipeline pipeline-mnist',
     description=''
 )
-def mnist():
-    preprocess = preprocess_op().add_volume(
-        k8s_client.V1Volume(name='workflow-nfs',
-                            persistent_volume_claim=k8s_client.V1PersistentVolumeClaimVolumeSource(claim_name='workflow-pvc'))
-    ).add_volume_mount(k8s_client.V1VolumeMount(mount_path='/mnt', name='workflow-nfs'))
+def mnist(cm_bucket_name: str, cm_path: str):
+    pvc = k8s_client.V1PersistentVolumeClaimVolumeSource(claim_name='workflow-pvc')
+    volume = k8s_client.V1Volume(name='workflow-nfs',
+                                 persistent_volume_claim=pvc)
+    volume_mount = k8s_client.V1VolumeMount(mount_path='/mnt', name='workflow-nfs')
+    s3_endpoint = k8s_client.V1EnvVar('S3_ENDPOINT', 'http://10.101.144.113:9000')
+    s3_access_key = k8s_client.V1EnvVar('AWS_ACCESS_KEY_ID', 'minio')
+    s3_secret_key = k8s_client.V1EnvVar('AWS_SECRET_ACCESS_KEY', 'minio123')
 
-    train = train_op(preprocess.output).add_volume_mount(
-        k8s_client.V1VolumeMount(mount_path='/mnt', name='workflow-nfs')
-    )
+    preprocess = preprocess_op() \
+        .add_volume(volume)\
+        .add_volume_mount(volume_mount)
 
-    predictions = prediction_op(train.output, preprocess.output).add_volume_mount(
-        k8s_client.V1VolumeMount(mount_path='/mnt', name='workflow-nfs')
-    )
+    train = train_op(preprocess.output) \
+        .add_volume_mount(volume_mount)
+
+    predictions = prediction_op(train.output, preprocess.output, cm_bucket_name, cm_path) \
+        .add_volume_mount(volume_mount) \
+        .add_env_variable(s3_endpoint) \
+        .add_env_variable(s3_access_key) \
+        .add_env_variable(s3_secret_key)
 
 
 def get_or_create_experiment(experiment_name: str) -> ApiExperiment:
@@ -85,5 +95,6 @@ client = kfp.Client()
 experiment = get_or_create_experiment(EXPERIMENT_NAME)
 
 # Submit a pipeline run
+pipeline_arguments = { 'cm_bucket_name': 'sleq-ml', 'cm_path': 'metrics/cm.csv.tar.gz'}
 run_name = pipeline_func.__name__ + ' run'
-run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename)
+run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, pipeline_arguments)

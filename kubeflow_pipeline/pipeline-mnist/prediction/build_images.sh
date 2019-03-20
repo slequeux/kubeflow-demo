@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
+eval $(minikube docker-env)
 docker build -t romibuzi/kubeflow-mnist:prediction-third .
-docker push romibuzi/kubeflow-mnist:prediction-third

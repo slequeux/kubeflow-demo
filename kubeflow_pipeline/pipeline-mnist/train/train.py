@@ -36,7 +36,7 @@ def main():
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
-    model.fit(x_train, y_train, epochs=5)
+    model.fit(x_train, y_train, epochs=1)
 
     model.save('/mnt/model.h5')
 

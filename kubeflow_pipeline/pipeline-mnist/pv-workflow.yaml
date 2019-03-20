@@ -4,6 +4,7 @@ metadata:
   name: workflow-nfs
   labels:
     type: local
+  namespace: kubeflow
 spec:
   storageClassName: manual
   capacity:
@@ -11,12 +12,13 @@ spec:
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: "/Users/romain/Workspaces/Ops/kubeflow/data"
+    path: "/tmp/mnist"
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: workflow-pvc
+  namespace: kubeflow
 spec:
   storageClassName: manual
   accessModes:
