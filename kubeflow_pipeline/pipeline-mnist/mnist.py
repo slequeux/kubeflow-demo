@@ -36,8 +36,7 @@ def prediction_op(train_output: str, preprocess_output: str, cm_bucket_name: str
             '--train-output', train_output,
             '--bucket-name', cm_bucket_name,
             '--cm-path', cm_path
-        ],
-        file_outputs={'prediction': '/output.txt'}
+        ]
     )
 
 

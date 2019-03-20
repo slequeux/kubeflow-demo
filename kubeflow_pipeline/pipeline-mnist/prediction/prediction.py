@@ -58,7 +58,6 @@ def save_confusion_matrix(cm_data, bucket_name, path):
     with tarfile.open(name='/tmp/cm.csv.tar.gz', mode='w:gz') as f:
         f.add('/tmp/cm.csv', arcname='cm.csv')
 
-    print('Uploading to %s in bucket %s with key %s and user %s' % (os.environ['S3_ENDPOINT'], bucket_name, path, os.environ['AWS_ACCESS_KEY_ID']))
     s3_client = boto3.client(service_name='s3',
                              endpoint_url=os.environ['S3_ENDPOINT'],
                              use_ssl=False,
@@ -67,7 +66,6 @@ def save_confusion_matrix(cm_data, bucket_name, path):
 
     s3_client.upload_file('/tmp/cm.csv.tar.gz', bucket_name, path)
 
-    print('Writing CM file')
     # TODO : compute labels from cm_data['target'].distinct
     metadata = {
         'outputs': [{
@@ -80,7 +78,7 @@ def save_confusion_matrix(cm_data, bucket_name, path):
                 {'name': 'count', 'type': 'NUMBER'},
             ],
             'source': 'minio://%s/%s' % (bucket_name, path),
-            'labels': list(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+            'labels': list(['0', '1'])
         }]
     }
 
