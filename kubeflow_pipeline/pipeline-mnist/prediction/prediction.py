@@ -52,19 +52,25 @@ def save_metrics(loss, acc):
 
 
 def save_confusion_matrix(cm_data, bucket_name, path):
+    def upload_to_minio(file):
+        s3_client = boto3.client(service_name='s3',
+                                 endpoint_url=os.environ['S3_ENDPOINT'],
+                                 use_ssl=False,
+                                 aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+                                 aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
+
+        bucket = [bucket for bucket in s3_client.list_buckets()['Buckets'] if bucket['Name'] == bucket_name]
+        if len(bucket) == 0:
+            s3_client.create_bucket(Bucket=bucket_name)
+
+        s3_client.upload_file(file, bucket_name, path)
+
     print('Saving CM')
     with open('/tmp/cm.csv', 'w') as f:
         cm_data.to_csv(f, columns=['target', 'predicted', 'count'], header=False, index=False)
     with tarfile.open(name='/tmp/cm.csv.tar.gz', mode='w:gz') as f:
         f.add('/tmp/cm.csv', arcname='cm.csv')
-
-    s3_client = boto3.client(service_name='s3',
-                             endpoint_url=os.environ['S3_ENDPOINT'],
-                             use_ssl=False,
-                             aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
-                             aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
-
-    s3_client.upload_file('/tmp/cm.csv.tar.gz', bucket_name, path)
+    upload_to_minio('/tmp/cm.csv.tar.gz')
 
     # TODO : compute labels from cm_data['target'].distinct
     metadata = {
@@ -120,5 +126,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # TODO : create bucket if not exists
     main()
