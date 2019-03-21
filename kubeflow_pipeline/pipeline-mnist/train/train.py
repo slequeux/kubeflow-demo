@@ -17,6 +17,11 @@ def parse_arguments():
                         required=False,
                         default=5,
                         help='Number of epoch training')
+    parser.add_argument('--hidden-layer-size',
+                        type=int,
+                        required=False,
+                        default=512,
+                        help='Number of neurons in hidden layer')
     parser.add_argument('--dropout',
                         type=float,
                         required=False,
@@ -38,7 +43,7 @@ def main():
 
     model = tf.keras.models.Sequential([
         tf.keras.layers.Flatten(input_shape=(28, 28)),
-        tf.keras.layers.Dense(512, activation=tf.nn.relu),
+        tf.keras.layers.Dense(args.hidden_layer_size, activation=tf.nn.relu),
         tf.keras.layers.Dropout(args.dropout),
         tf.keras.layers.Dense(10, activation=tf.nn.softmax)
     ])
