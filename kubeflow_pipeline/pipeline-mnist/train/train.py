@@ -12,6 +12,16 @@ def parse_arguments():
                         type=str,
                         required=True,
                         help='Preprocess output.')
+    parser.add_argument('--epoch',
+                        type=int,
+                        required=False,
+                        default=5,
+                        help='Number of epoch training')
+    parser.add_argument('--dropout',
+                        type=float,
+                        required=False,
+                        default=0.2,
+                        help='Dropout')
 
     return parser.parse_args()
 
@@ -29,14 +39,14 @@ def main():
     model = tf.keras.models.Sequential([
         tf.keras.layers.Flatten(input_shape=(28, 28)),
         tf.keras.layers.Dense(512, activation=tf.nn.relu),
-        tf.keras.layers.Dropout(0.2),  # TODO : Parametrize dropout
+        tf.keras.layers.Dropout(args.dropout),
         tf.keras.layers.Dense(10, activation=tf.nn.softmax)
     ])
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
-    model.fit(x_train, y_train, epochs=1)
+    model.fit(x_train, y_train, epochs=args.epoch)
 
     model.save('/mnt/model.h5')
 

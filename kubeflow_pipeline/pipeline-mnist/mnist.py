@@ -9,20 +9,22 @@ def preprocess_op():
     return dsl.ContainerOp(
         name='preprocess',
         image='romibuzi/kubeflow-mnist:preprocessing-fifth',
-        arguments=[],
+        arguments='',
         file_outputs={
             'output': '/output.txt'
         }
     )
 
 
-def train_op(preprocess_output: str):
+def train_op(preprocess_output: str, epoch: int, dropout: float):
     return dsl.ContainerOp(
         name='train',
         image='romibuzi/kubeflow-mnist:train-seventh',
-        arguments=[
-            '--preprocess-output', preprocess_output
-        ],
+        arguments=' '.join([
+            '--preprocess-output', preprocess_output,
+            '--epoch', str(epoch),
+            '--dropout', str(dropout)
+        ]),
         file_outputs={'output': '/output.txt'}
     )
 
@@ -31,12 +33,12 @@ def prediction_op(train_output: str, preprocess_output: str, cm_bucket_name: str
     return dsl.ContainerOp(
         name='prediction',
         image='romibuzi/kubeflow-mnist:prediction-third',
-        arguments=[
+        arguments=' '.join([
             '--preprocess-output', preprocess_output,
             '--train-output', train_output,
             '--bucket-name', cm_bucket_name,
             '--cm-path', cm_path
-        ]
+        ])
     )
 
 
@@ -44,7 +46,10 @@ def prediction_op(train_output: str, preprocess_output: str, cm_bucket_name: str
     name='pipeline pipeline-mnist',
     description=''
 )
-def mnist(cm_bucket_name: str, cm_path: str):
+def mnist(cm_bucket_name: str,
+          cm_path: str,
+          epoch: int = 5,
+          dropout: float = 0.2):
     pvc = k8s_client.V1PersistentVolumeClaimVolumeSource(claim_name='workflow-pvc')
     volume = k8s_client.V1Volume(name='workflow-nfs',
                                  persistent_volume_claim=pvc)
@@ -57,7 +62,7 @@ def mnist(cm_bucket_name: str, cm_path: str):
         .add_volume(volume)\
         .add_volume_mount(volume_mount)
 
-    train = train_op(preprocess.output) \
+    train = train_op(preprocess.output, epoch, dropout) \
         .add_volume_mount(volume_mount)
 
     predictions = prediction_op(train.output, preprocess.output, cm_bucket_name, cm_path) \
@@ -94,6 +99,11 @@ client = kfp.Client()
 experiment = get_or_create_experiment(EXPERIMENT_NAME)
 
 # Submit a pipeline run
-pipeline_arguments = { 'cm_bucket_name': 'sleq-ml', 'cm_path': 'metrics/cm.csv.tar.gz'}
+pipeline_arguments = {
+    'cm_bucket_name': 'sleq-ml',
+    'cm_path': 'metrics/cm.csv.tar.gz',
+    'epoch': 5,
+    'dropout': 0.2
+}
 run_name = pipeline_func.__name__ + ' run'
 run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, pipeline_arguments)

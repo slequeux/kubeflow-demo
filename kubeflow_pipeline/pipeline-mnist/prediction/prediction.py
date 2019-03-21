@@ -56,11 +56,8 @@ def compute_confusion_matrix(predictions, y_test, labels):
     argmax = np.argmax(predictions, axis=1)
     argmax = np.array([int(labels[idx]) for idx in argmax])
     cm = tf.confusion_matrix(y_test, argmax)
-    print(cm)
-    print(type(cm))
     with tf.Session():
         cm_numpy = tf.Tensor.eval(cm, feed_dict=None, session=None)
-        print('Confusion Matrix: \n\n', cm_numpy)
     data = []
     for idx_target, target in enumerate(labels):
         for idx_predicted, predicted in enumerate(labels):
