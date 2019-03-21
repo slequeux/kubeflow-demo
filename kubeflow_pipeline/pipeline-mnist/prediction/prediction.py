@@ -87,7 +87,6 @@ def save_confusion_matrix(cm_data, bucket_name, path, labels):
         f.add('/tmp/cm.csv', arcname='cm.csv')
     upload_to_minio('/tmp/cm.csv.tar.gz')
 
-    # TODO : compute labels from cm_data['target'].distinct
     metadata = {
         'outputs': [{
             'type': 'confusion_matrix',
@@ -129,7 +128,7 @@ def main():
 
     print('Compute CM')
     predictions = model.predict(x_test)
-    labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    labels = [str(x) for x in np.sort(np.unique(y_test))]
     df_cm = compute_confusion_matrix(predictions, y_test, labels)
     save_confusion_matrix(df_cm, args.bucket_name, args.cm_path, labels)
 
