@@ -5,6 +5,7 @@ import pandas as pd
 import tarfile
 import boto3
 import os
+import numpy as np
 
 import tensorflow as tf
 
@@ -51,7 +52,24 @@ def save_metrics(loss, acc):
         json.dump(metrics, f)
 
 
-def save_confusion_matrix(cm_data, bucket_name, path):
+def compute_confusion_matrix(predictions, y_test, labels):
+    argmax = np.argmax(predictions, axis=1)
+    argmax = np.array([int(labels[idx]) for idx in argmax])
+    cm = tf.confusion_matrix(y_test, argmax)
+    print(cm)
+    print(type(cm))
+    with tf.Session():
+        cm_numpy = tf.Tensor.eval(cm, feed_dict=None, session=None)
+        print('Confusion Matrix: \n\n', cm_numpy)
+    data = []
+    for idx_target, target in enumerate(labels):
+        for idx_predicted, predicted in enumerate(labels):
+            data.append((target, predicted, cm_numpy[idx_target][idx_predicted]))
+    df_cm = pd.DataFrame(data, columns=['target', 'predicted', 'count'])
+    return df_cm
+
+
+def save_confusion_matrix(cm_data, bucket_name, path, labels):
     def upload_to_minio(file):
         s3_client = boto3.client(service_name='s3',
                                  endpoint_url=os.environ['S3_ENDPOINT'],
@@ -84,7 +102,7 @@ def save_confusion_matrix(cm_data, bucket_name, path):
                 {'name': 'count', 'type': 'NUMBER'},
             ],
             'source': 'minio://%s/%s' % (bucket_name, path),
-            'labels': list(['0', '1'])
+            'labels': list(labels)
         }]
     }
 
@@ -114,15 +132,9 @@ def main():
 
     print('Compute CM')
     predictions = model.predict(x_test)
-    # TODO: compute CM stats (see tf.math.confusion_matrix
-    data = [
-        ('0', '0', 50),
-        ('0', '1', 4),
-        ('1', '0', 8),
-        ('1', '1', 86)
-    ]
-    df_cm = pd.DataFrame(data, columns=['target', 'predicted', 'count'])
-    save_confusion_matrix(df_cm, args.bucket_name, args.cm_path)
+    labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    df_cm = compute_confusion_matrix(predictions, y_test, labels)
+    save_confusion_matrix(df_cm, args.bucket_name, args.cm_path, labels)
 
 
 if __name__ == "__main__":
