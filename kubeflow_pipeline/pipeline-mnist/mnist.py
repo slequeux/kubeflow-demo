@@ -2,7 +2,7 @@ import kfp
 import kfp.compiler as compiler
 import kfp.dsl as dsl
 from kfp_experiment.models.api_experiment import ApiExperiment
-from kubernetes import client as k8s_client
+from kubernetes import client as k8s_client, config
 
 
 def preprocess_op():
@@ -43,6 +43,29 @@ def prediction_op(train_output: str, preprocess_output: str, cm_bucket_name: str
     )
 
 
+def kubeflow_deploy_op(train_output: str, tf_server_name: str, step_name='deploy'):
+    return dsl.ContainerOp(
+        name=step_name,
+        image='gcr.io/ml-pipeline/ml-pipeline-kubeflow-deployer:6ad2601ec7d04e842c212c50d5c78e548e12ddea',
+        arguments=[
+            '--cluster-name', 'mnist-pipeline',
+            '--model-path', train_output,
+            '--server-name', tf_server_name
+        ]
+    )
+
+
+def find_minio_pod_ip():
+    config.load_incluster_config()
+    v1 = k8s_client.CoreV1Api()
+    response = v1.list_pod_for_all_namespaces(watch=False)
+
+    for pod in response.items:
+        if "minio" in pod.metadata.name:
+            return pod.status.pod_ip
+    raise Exception("minio pod not found !")
+
+
 @dsl.pipeline(
     name='pipeline pipeline-mnist',
     description=''
@@ -56,7 +79,8 @@ def mnist(cm_bucket_name: str,
     volume = k8s_client.V1Volume(name='workflow-nfs',
                                  persistent_volume_claim=pvc)
     volume_mount = k8s_client.V1VolumeMount(mount_path='/mnt', name='workflow-nfs')
-    s3_endpoint = k8s_client.V1EnvVar('S3_ENDPOINT', 'http://10.101.144.113:9000')
+
+    s3_endpoint = k8s_client.V1EnvVar('S3_ENDPOINT', f'http://{find_minio_pod_ip()}:9000')
     s3_access_key = k8s_client.V1EnvVar('AWS_ACCESS_KEY_ID', 'minio')
     s3_secret_key = k8s_client.V1EnvVar('AWS_SECRET_ACCESS_KEY', 'minio123')
 
@@ -73,25 +97,28 @@ def mnist(cm_bucket_name: str,
         .add_env_variable(s3_access_key) \
         .add_env_variable(s3_secret_key)
 
+    deploy = kubeflow_deploy_op(train.output, 'mnist-pipeline-{{workflow.name}}') \
+        .add_volume_mount(volume_mount)
+
 
 def get_or_create_experiment(experiment_name: str) -> ApiExperiment:
     existing_experiments = client.list_experiments().experiments
 
     if existing_experiments is not None:
-        experiment = next(iter([exp for exp in existing_experiments if exp.name == EXPERIMENT_NAME]), None)
+        exp = next(iter([exp for exp in existing_experiments if exp.name == EXPERIMENT_NAME]), None)
     else:
-        experiment = None
+        exp = None
 
-    if experiment is None:
-        experiment = client.create_experiment(experiment_name)
-        print('Experiment %s created with ID %s' % (experiment.name, experiment.id))
+    if exp is None:
+        exp = client.create_experiment(experiment_name)
+        print('Experiment %s created with ID %s' % (exp.name, exp.id))
     else:
-        print('Experiment already exists with id %s' % experiment.id)
+        print('Experiment already exists with id %s' % exp.id)
 
-    return experiment
+    return exp
 
 
-EXPERIMENT_NAME = 'pipeline-mnist with train'
+EXPERIMENT_NAME = 'mnist-pipeline'
 pipeline_func = mnist
 pipeline_filename = pipeline_func.__name__ + '.tar.gz'
 
