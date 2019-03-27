@@ -46,10 +46,10 @@ def prediction_op(train_output: str, preprocess_output: str, cm_bucket_name: str
 def kubeflow_deploy_op(train_output: str, tf_server_name: str, step_name='deploy'):
     return dsl.ContainerOp(
         name=step_name,
-        image='gcr.io/ml-pipeline/ml-pipeline-kubeflow-deployer:6ad2601ec7d04e842c212c50d5c78e548e12ddea',
+        image='romibuzi/kubeflow-mnist:deploy-third',
         arguments=[
             '--cluster-name', 'mnist-pipeline',
-            '--model-path', train_output,
+            '--train-output', train_output,
             '--server-name', tf_server_name
         ]
     )
@@ -101,11 +101,11 @@ def mnist(cm_bucket_name: str,
         .add_volume_mount(volume_mount)
 
 
-def get_or_create_experiment(experiment_name: str) -> ApiExperiment:
+def get_or_create_experiment(experiment_name: str, client: kfp.Client) -> ApiExperiment:
     existing_experiments = client.list_experiments().experiments
 
     if existing_experiments is not None:
-        exp = next(iter([exp for exp in existing_experiments if exp.name == EXPERIMENT_NAME]), None)
+        exp = next(iter([exp for exp in existing_experiments if exp.name == experiment_name]), None)
     else:
         exp = None
 
@@ -118,22 +118,26 @@ def get_or_create_experiment(experiment_name: str) -> ApiExperiment:
     return exp
 
 
-EXPERIMENT_NAME = 'mnist-pipeline'
-pipeline_func = mnist
-pipeline_filename = pipeline_func.__name__ + '.tar.gz'
+def main():
+    experiment_name = 'mnist-pipeline'
+    pipeline_func = mnist
+    pipeline_filename = pipeline_func.__name__ + '.tar.gz'
 
-compiler.Compiler().compile(pipeline_func, pipeline_filename)
+    compiler.Compiler().compile(pipeline_func, pipeline_filename)
 
-client = kfp.Client()
-experiment = get_or_create_experiment(EXPERIMENT_NAME)
+    client = kfp.Client()
+    experiment = get_or_create_experiment(experiment_name, client)
 
-# Submit a pipeline run
-pipeline_arguments = {
-    'cm_bucket_name': 'sleq-ml',
-    'cm_path': 'metrics/cm.csv.tar.gz',
-    'epoch': 5,
-    'dropout': 0.2,
-    'hidden_layer_size': 512
-}
-run_name = pipeline_func.__name__ + ' run'
-run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, pipeline_arguments)
+    # Submit a pipeline run
+    pipeline_arguments = {
+        'cm_bucket_name': 'sleq-ml',
+        'cm_path': 'metrics/cm.csv.tar.gz',
+        'epoch': 5,
+        'dropout': 0.2,
+        'hidden_layer_size': 512
+    }
+    run_name = pipeline_func.__name__ + ' run'
+    run_result = client.run_pipeline(experiment.id, run_name, pipeline_filename, pipeline_arguments)
+
+
+main()
