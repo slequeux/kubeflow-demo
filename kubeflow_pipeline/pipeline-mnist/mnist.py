@@ -49,8 +49,10 @@ def kubeflow_deploy_op(train_output: str, tf_server_name: str, step_name='deploy
         image='romibuzi/kubeflow-mnist:deploy-0.0.1',
         arguments=[
             '--cluster-name', 'mnist-pipeline',
+            '--namespace', 'kubeflow',
             '--train-output', train_output,
-            '--server-name', tf_server_name
+            '--server-name', tf_server_name,
+            '--pvc-name', 'workflow-pvc'
         ]
     )
 

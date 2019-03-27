@@ -100,7 +100,7 @@ ks pkg install kubeflow/tf-serving@${KUBEFLOW_VERSION}
 
 echo "Generating the TF Serving config..."
 ks generate tf-serving server --name="${SERVER_NAME}"
-ks param set server modelPath "${MODEL_PATH}/export/export"
+ks param set server modelPath "${MODEL_PATH}"
 
 # support local storage to deploy tf-serving.
 if [ -n "${PVC_NAME}" ];then
