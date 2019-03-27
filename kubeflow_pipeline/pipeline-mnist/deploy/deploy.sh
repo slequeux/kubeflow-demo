@@ -53,7 +53,7 @@ while (($#)); do
    esac
 done
 
-MODEL_PATH=$(echo $TRAIN_OUTPUT | jq '.model')
+MODEL_PATH=$(echo $TRAIN_OUTPUT | jq '.model' | tr -d '"')
 
 if [ -z "${MODEL_PATH}" ]; then
   echo "You must specify a path to the saved model"

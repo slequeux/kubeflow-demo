@@ -57,15 +57,15 @@ def kubeflow_deploy_op(train_output: str, tf_server_name: str, step_name='deploy
     )
 
 
-def find_minio_pod_ip():
+def find_minio_ip():
     config.load_incluster_config()
     v1 = k8s_client.CoreV1Api()
-    response = v1.list_pod_for_all_namespaces(watch=False)
+    response = v1.list_service_for_all_namespaces(watch=False)
 
-    for pod in response.items:
-        if "minio" in pod.metadata.name:
-            return pod.status.pod_ip
-    raise Exception("minio pod not found !")
+    for service in response.items:
+        if service.metadata.name == "minio-service":
+            return service.spec.cluster_ip
+    raise Exception("minio service not found !")
 
 
 @dsl.pipeline(
@@ -83,7 +83,7 @@ def mnist(cm_bucket_name: str,
                                  persistent_volume_claim=pvc)
     volume_mount = k8s_client.V1VolumeMount(mount_path='/mnt', name='workflow-nfs')
 
-    s3_endpoint = k8s_client.V1EnvVar('S3_ENDPOINT', f'http://{find_minio_pod_ip()}:9000')
+    s3_endpoint = k8s_client.V1EnvVar('S3_ENDPOINT', f'http://{find_minio_ip()}:9000')
     s3_access_key = k8s_client.V1EnvVar('AWS_ACCESS_KEY_ID', 'minio')
     s3_secret_key = k8s_client.V1EnvVar('AWS_SECRET_ACCESS_KEY', 'minio123')
 
@@ -101,7 +101,7 @@ def mnist(cm_bucket_name: str,
         .add_env_variable(s3_secret_key)
 
     if deploy:
-        deploy = kubeflow_deploy_op(train.output, 'mnist-pipeline-{{workflow.name}}') \
+        kubeflow_deploy_op(train.output, 'mnist-pipeline-{{workflow.name}}') \
            .add_volume_mount(volume_mount)
 
 
