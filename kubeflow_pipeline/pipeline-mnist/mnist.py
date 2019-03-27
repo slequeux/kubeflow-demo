@@ -8,7 +8,7 @@ from kubernetes import client as k8s_client, config
 def preprocess_op():
     return dsl.ContainerOp(
         name='preprocess',
-        image='romibuzi/kubeflow-mnist:preprocessing:0.0.1',
+        image='romibuzi/kubeflow-mnist:preprocessing-0.0.1',
         arguments='',
         file_outputs={
             'output': '/output.txt'
@@ -19,7 +19,7 @@ def preprocess_op():
 def train_op(preprocess_output: str, epoch: int, dropout: float, hidden_layer_size: int):
     return dsl.ContainerOp(
         name='train',
-        image='romibuzi/kubeflow-mnist:train:0.0.1',
+        image='romibuzi/kubeflow-mnist:train-0.0.1',
         arguments=[
             '--preprocess-output', preprocess_output,
             '--epoch', str(epoch),
@@ -33,7 +33,7 @@ def train_op(preprocess_output: str, epoch: int, dropout: float, hidden_layer_si
 def prediction_op(train_output: str, preprocess_output: str, cm_bucket_name: str, cm_path: str):
     return dsl.ContainerOp(
         name='prediction',
-        image='romibuzi/kubeflow-mnist:prediction:0.0.1',
+        image='romibuzi/kubeflow-mnist:prediction-0.0.1',
         arguments=[
             '--preprocess-output', preprocess_output,
             '--train-output', train_output,
@@ -46,7 +46,7 @@ def prediction_op(train_output: str, preprocess_output: str, cm_bucket_name: str
 def kubeflow_deploy_op(train_output: str, tf_server_name: str, step_name='deploy'):
     return dsl.ContainerOp(
         name=step_name,
-        image='romibuzi/kubeflow-mnist:deploy:0.0.1',
+        image='romibuzi/kubeflow-mnist:deploy-0.0.1',
         arguments=[
             '--cluster-name', 'mnist-pipeline',
             '--train-output', train_output,
