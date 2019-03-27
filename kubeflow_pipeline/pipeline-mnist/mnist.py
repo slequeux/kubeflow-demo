@@ -3,6 +3,7 @@ import kfp.compiler as compiler
 import kfp.dsl as dsl
 from kfp_experiment.models.api_experiment import ApiExperiment
 from kubernetes import client as k8s_client, config
+from kubernetes.config import ConfigException
 
 
 def preprocess_op():
@@ -46,7 +47,7 @@ def prediction_op(train_output: str, preprocess_output: str, cm_bucket_name: str
 def kubeflow_deploy_op(train_output: str, tf_server_name: str, step_name='deploy'):
     return dsl.ContainerOp(
         name=step_name,
-        image='romibuzi/kubeflow-mnist:deploy-0.0.1',
+        image='romibuzi/kubeflow-mnist:deploy-0.0.2',
         arguments=[
             '--cluster-name', 'mnist-pipeline',
             '--namespace', 'kubeflow',
@@ -58,7 +59,11 @@ def kubeflow_deploy_op(train_output: str, tf_server_name: str, step_name='deploy
 
 
 def find_minio_ip():
-    config.load_incluster_config()
+    try:
+        config.load_incluster_config()
+    except ConfigException:
+        config.load_kube_config()
+
     v1 = k8s_client.CoreV1Api()
     response = v1.list_service_for_all_namespaces(watch=False)
 
