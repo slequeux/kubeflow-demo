@@ -47,7 +47,7 @@ def prediction_op(train_output: str, preprocess_output: str, cm_bucket_name: str
 def kubeflow_deploy_op(train_output: str, tf_server_name: str, step_name='deploy'):
     return dsl.ContainerOp(
         name=step_name,
-        image='romibuzi/kubeflow-mnist:deploy-0.0.2',
+        image='romibuzi/kubeflow-mnist:deploy-0.0.1',
         arguments=[
             '--cluster-name', 'mnist-pipeline',
             '--namespace', 'kubeflow',

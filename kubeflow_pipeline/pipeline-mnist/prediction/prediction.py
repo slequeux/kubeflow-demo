@@ -113,7 +113,7 @@ def main():
     train_output = json.loads(args.train_output)
 
     print('Loading model')
-    model = tf.keras.models.load_model(train_output['model'])
+    model = tf.keras.models.load_model(train_output['keras_model'])
 
     print('loading prediction data')
     with open(preprocess_output['x-test'], 'rb') as f:

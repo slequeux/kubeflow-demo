@@ -1,6 +1,8 @@
 import argparse
 import json
+import os
 import pickle
+from datetime import datetime
 
 import tensorflow as tf
 
@@ -53,11 +55,25 @@ def main():
 
     model.fit(x_train, y_train, epochs=args.epoch)
 
+    model_serving_dir = "/mnt/mnist_model"
+    now = datetime.now().strftime("%Y%m%d%H%I%S")
+    if not os.path.exists(model_serving_dir):
+        os.makedirs(model_serving_dir)
+
     model.save('/mnt/model.h5')
+
+    # Save  model for tf-serving
+    with tf.keras.backend.get_session() as sess:
+        tf.saved_model.simple_save(
+            sess,
+            os.path.join(model_serving_dir, now),
+            inputs={'inputs': model.input},
+            outputs={t.name: t for t in model.outputs})
 
     with open('/output.txt', 'w') as f:
         f.write(json.dumps({
-            'model': '/mnt/model.h5',
+            'keras_model': '/mnt/model.h5',
+            'serving_model_dir': model_serving_dir
         }))
 
 

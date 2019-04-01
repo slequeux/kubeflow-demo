@@ -53,14 +53,14 @@ while (($#)); do
    esac
 done
 
-MODEL_PATH=$(echo $TRAIN_OUTPUT | jq '.model' | tr -d '"')
+MODEL_SERVING_DIR=$(echo $TRAIN_OUTPUT | jq '.serving_model_dir' | tr -d '"')
 
-if [ -z "${MODEL_PATH}" ]; then
+if [ -z "${MODEL_SERVING_DIR}" ]; then
   echo "You must specify a path to the saved model"
   exit 1
 fi
 
-echo "Deploying the model '${MODEL_PATH}'"
+echo "Deploying the model '${MODEL_SERVING_DIR}'"
 
 if [ -z "${CLUSTER_NAME}" ]; then
   CLUSTER_NAME=$(wget -q -O- --header="Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/cluster-name)
@@ -100,7 +100,7 @@ ks pkg install kubeflow/tf-serving@${KUBEFLOW_VERSION}
 
 echo "Generating the TF Serving config..."
 ks generate tf-serving server --name="${SERVER_NAME}"
-ks param set server modelPath "${MODEL_PATH}"
+ks param set server modelPath "${MODEL_SERVING_DIR}"
 
 # support local storage to deploy tf-serving.
 if [ -n "${PVC_NAME}" ];then
@@ -115,7 +115,7 @@ ks apply default -c server
 
 # Wait for the deployment to have at least one available replica
 echo "Waiting for the TF Serving deployment to show up..."
-timeout="1000"
+timeout="180"
 start_time=`date +%s`
 while [[ $(kubectl get deploy --namespace "${KUBERNETES_NAMESPACE}" --selector=app="${SERVER_NAME}" 2>&1|wc -l) != "2" ]];do
   current_time=`date +%s`
