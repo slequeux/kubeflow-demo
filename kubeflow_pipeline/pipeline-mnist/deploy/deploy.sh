@@ -115,7 +115,7 @@ ks apply default -c server
 
 # Wait for the deployment to have at least one available replica
 echo "Waiting for the TF Serving deployment to show up..."
-timeout="180"
+timeout="1000"
 start_time=`date +%s`
 while [[ $(kubectl get deploy --namespace "${KUBERNETES_NAMESPACE}" --selector=app="${SERVER_NAME}" 2>&1|wc -l) != "2" ]];do
   current_time=`date +%s`
